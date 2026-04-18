@@ -1,4 +1,6 @@
 import os
+from pymongo import MongoClient
+import certifi
 from dotenv import load_dotenv
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_classic.chains import RetrievalQA
@@ -62,7 +64,7 @@ def ask(question):
     Submits a question to the RAG pipeline.
     
     Returns:
-        tuple: (answer_text, source_pages)
+        tuple: (answer_text, source_pages, source_metadata)
     """
     chain = _get_qa_chain()
     
@@ -74,15 +76,51 @@ def ask(question):
     # If the model explicitly couldn't find the answer in the text, clear the misleading sources
     lower_answer = answer_text.lower()
     if "cannot find this information" in lower_answer or "not in the document" in lower_answer:
-        return answer_text, []
+        return answer_text, [], []
         
     source_docs = response.get('source_documents', [])
     
-    # Extract robust, unique page numbers from the fetched documents
+    # Extract robust, unique page numbers and the source filename
     source_pages = list(set([doc.metadata.get("page", "Unknown") for doc in source_docs]))
-    
-    # Format and return the tuple
-    return answer_text, sorted(source_pages)
+    source_filename = None
+    if source_docs:
+        source_filename = source_docs[0].metadata.get("source", None)
+        
+    # Fetch chunk metadata from MongoDB
+    source_metadata = []
+    mongo_uri = os.getenv("MONGODB_URI")
+    if mongo_uri and source_filename:
+        try:
+            client = MongoClient(
+                mongo_uri,
+                serverSelectionTimeoutMS=30000,
+                connectTimeoutMS=30000,
+                tlsCAFile=certifi.where()
+            )
+            db = client["equity_rag"]
+            mongo_collection = db["document_chunks"]
+            
+            for page in source_pages:
+                if page == "Unknown": continue
+                # Match chunks by filename and page number
+                mongo_cursor = mongo_collection.find({
+                    "source": source_filename,
+                    "page_number": page
+                }).limit(1)  # Pull one matching chunk per page for the preview
+                
+                doc = next(mongo_cursor, None)
+                if doc:
+                    chunk_text = doc.get("text", "")
+                    source_metadata.append({
+                        "page": page,
+                        "source": source_filename,
+                        "chunk_preview": chunk_text[:100] + "..." if len(chunk_text) > 100 else chunk_text
+                    })
+        except Exception as e:
+            print(f"MongoDB retrieval failed during ask(): {e}")
+
+    # Format and return the tuple extended with metadata
+    return answer_text, sorted(source_pages), source_metadata
 
 if __name__ == "__main__":
     # Test block
@@ -91,10 +129,11 @@ if __name__ == "__main__":
     print(f"Question: '{test_question}'\n")
     
     try:
-        answer, pages = ask(test_question)
+        answer, pages, metadata = ask(test_question)
         print("--- Response ---")
         print(f"Answer: {answer}")
         print(f"Source Pages: {pages}")
+        print(f"Source Metadata: {metadata}")
     except FileNotFoundError as e:
         print(f"Module Failed: {e}")
         print("Have you generated your local FAISS index yet? You must run the vector store creation first before querying!")

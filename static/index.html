@@ -169,6 +169,16 @@
             border: 1px solid #e2e8f0;
         }
 
+        .chunk-preview {
+            font-size: 11px;
+            color: #94a3b8;
+            font-style: italic;
+            margin-top: 4px;
+            padding: 4px 8px;
+            line-height: 1.4;
+            border-left: 2px solid #cbd5e1;
+        }
+
         /* INPUT SECTION */
         .input-section {
             padding: 20px 24px;
@@ -343,7 +353,7 @@
             }
         }
 
-        function createMessageElement(text, isUser, sources = []) {
+        function createMessageElement(text, isUser, sources = [], sourceMetadata = []) {
             const wrapper = document.createElement('div');
             wrapper.className = `message-wrapper ${isUser ? 'user-message' : 'bot-message'}`;
             
@@ -358,6 +368,16 @@
                 sourceDiv.className = 'source-text';
                 sourceDiv.textContent = 'Source: ' + sources.join(', ');
                 wrapper.appendChild(sourceDiv);
+                
+                // Show chunk previews from MongoDB metadata
+                if (sourceMetadata && sourceMetadata.length > 0) {
+                    sourceMetadata.forEach(meta => {
+                        const previewDiv = document.createElement('div');
+                        previewDiv.className = 'chunk-preview';
+                        previewDiv.textContent = `Page ${meta.page} (${meta.source}): "${meta.chunk_preview}"`;
+                        wrapper.appendChild(previewDiv);
+                    });
+                }
             }
 
             return wrapper;
@@ -416,7 +436,7 @@
                 removeSpinner();
 
                 if (response.ok) {
-                    chatWindow.appendChild(createMessageElement(result.answer, false, result.sources));
+                    chatWindow.appendChild(createMessageElement(result.answer, false, result.sources, result.source_metadata || []));
                 } else {
                     chatWindow.appendChild(createMessageElement(result.error || "An error occurred handling your request.", false));
                 }

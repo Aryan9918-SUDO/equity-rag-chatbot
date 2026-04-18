@@ -1,6 +1,13 @@
 import os
 import fitz  # PyMuPDF
+from datetime import datetime
+from pymongo import MongoClient
+import certifi
+from dotenv import load_dotenv
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+
+# Load environment variables
+load_dotenv()
 
 def process_pdf(file_path, chunk_size=500, chunk_overlap=50):
     """
@@ -9,6 +16,29 @@ def process_pdf(file_path, chunk_size=500, chunk_overlap=50):
     """
     filename = os.path.basename(file_path)
     chunks_with_metadata = []
+    
+    # Initialize MongoDB Connection
+    mongo_uri = os.getenv("MONGODB_URI")
+    mongo_collection = None
+    if mongo_uri:
+        try:
+            client = MongoClient(
+                mongo_uri,
+                serverSelectionTimeoutMS=30000,
+                connectTimeoutMS=30000,
+                tlsCAFile=certifi.where()
+            )
+            db = client["equity_rag"]
+            mongo_collection = db["document_chunks"]
+            
+            # Delete any existing chunks with the same source filename
+            mongo_collection.delete_many({"source": filename})
+            print(f"Cleared existing MongoDB chunks for {filename}")
+        except Exception as e:
+            print(f"MongoDB connection failed: {e}")
+            mongo_collection = None
+    else:
+        print("MONGODB_URI not found in .env. Skipping MongoDB insertion.")
     
     # Initialize LangChain's RecursiveCharacterTextSplitter for chunking
     text_splitter = RecursiveCharacterTextSplitter(
@@ -37,7 +67,8 @@ def process_pdf(file_path, chunk_size=500, chunk_overlap=50):
         page_chunks = text_splitter.split_text(text)
         
         # Attach metadata to each chunk
-        for chunk in page_chunks:
+        for chunk_idx, chunk in enumerate(page_chunks):
+            # 1. LangChain format for FAISS
             chunk_data = {
                 "page_content": chunk,
                 "metadata": {
@@ -46,6 +77,20 @@ def process_pdf(file_path, chunk_size=500, chunk_overlap=50):
                 }
             }
             chunks_with_metadata.append(chunk_data)
+            
+            # 2. MongoDB format for source metadata tracking
+            if mongo_collection is not None:
+                mongo_doc = {
+                    "text": chunk,
+                    "page_number": page_num + 1,
+                    "source": filename,
+                    "chunk_index": chunk_idx,
+                    "timestamp": datetime.utcnow()
+                }
+                try:
+                    mongo_collection.insert_one(mongo_doc)
+                except Exception as e:
+                    print(f"Failed to insert chunk into MongoDB: {e}")
             
     doc.close()
     return chunks_with_metadata

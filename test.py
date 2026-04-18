@@ -74,6 +74,13 @@ def test_pipeline():
             data = req.json()
             print(f"A: {data.get('answer')}")
             print(f"Source Pages: {data.get('sources')}")
+            metadata = data.get('source_metadata', [])
+            if metadata:
+                print(f"Source Metadata:")
+                for m in metadata:
+                    print(f"  - Page {m['page']} ({m['source']}): \"{m['chunk_preview']}\"")
+            else:
+                print(f"Source Metadata: (none)")
         else:
             print(f"Query Failed (HTTP {req.status_code}): {req.text}")
             

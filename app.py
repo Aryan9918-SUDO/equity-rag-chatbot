@@ -90,15 +90,16 @@ def ask_question():
             
         question = data['question']
         
-        # Delegate QA retrieval to chatbot.py
-        answer_text, source_pages = ask(question)
+        # Delegate QA retrieval to chatbot.py (now returns 3 values with MongoDB metadata)
+        answer_text, source_pages, source_metadata = ask(question)
         
         # Format the output sources nicely as expected: ["Page 3", "Page 7"]
         formatted_sources = [f"Page {page}" for page in source_pages]
         
         return jsonify({
             "answer": answer_text,
-            "sources": formatted_sources
+            "sources": formatted_sources,
+            "source_metadata": source_metadata
         }), 200
         
     except FileNotFoundError:
