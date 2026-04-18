@@ -1,0 +1,16 @@
+# Environments
+venv/
+env/
+.env
+
+# Python caching
+__pycache__/
+*.pyc
+
+# Data & Uploads
+uploads/
+faiss_index/
+Sample_ESOP_Plan.pdf
+
+# OS generated files
+.DS_Store

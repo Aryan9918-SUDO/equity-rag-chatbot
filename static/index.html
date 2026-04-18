@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Equity Document Q&A</title>
+    <!-- Use Google Fonts for modern typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --bg-color: #f8fafc;
+            --container-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border-color: #e2e8f0;
+            --user-msg: #3b82f6;
+            --bot-msg: #f1f5f9;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            display: flex;
+            flex-direction: column;
+            background: var(--container-bg);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
+            height: 100%;
+        }
+
+        /* HEADER */
+        header {
+            padding: 24px;
+            border-bottom: 1px solid var(--border-color);
+            text-align: center;
+            background: linear-gradient(to right, #ffffff, #fdfdfd);
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 600;
+            color: #0f172a;
+        }
+
+        .subtitle {
+            margin: 6px 0 0;
+            font-size: 14px;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        /* UPLOAD SECTION */
+        .upload-section {
+            padding: 16px 24px;
+            border-bottom: 1px solid var(--border-color);
+            background: #f8fafc;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .upload-btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+
+        .upload-btn:hover {
+            background-color: var(--primary-hover);
+        }
+        
+        .upload-btn:active {
+            transform: scale(0.98);
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        #uploadStatus {
+            font-size: 14px;
+            color: #10b981;
+            font-weight: 500;
+            display: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        /* CHAT WINDOW */
+        .chat-window {
+            flex: 1;
+            padding: 24px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .message-wrapper {
+            display: flex;
+            flex-direction: column;
+            max-width: 80%;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .user-message {
+            align-self: flex-end;
+            align-items: flex-end;
+        }
+        
+        .bot-message {
+            align-self: flex-start;
+            align-items: flex-start;
+        }
+
+        .bubble {
+            padding: 14px 18px;
+            border-radius: 12px;
+            font-size: 15px;
+            line-height: 1.5;
+            word-wrap: break-word;
+        }
+
+        .user-message .bubble {
+            background-color: var(--user-msg);
+            color: white;
+            border-bottom-right-radius: 4px;
+            box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.2);
+        }
+
+        .bot-message .bubble {
+            background-color: var(--bot-msg);
+            color: var(--text-main);
+            border-bottom-left-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+
+        .source-text {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 6px;
+            font-style: italic;
+            background: #f8fafc;
+            padding: 4px 8px;
+            border-radius: 4px;
+            border: 1px solid #e2e8f0;
+        }
+
+        /* INPUT SECTION */
+        .input-section {
+            padding: 20px 24px;
+            border-top: 1px solid var(--border-color);
+            background: white;
+            display: flex;
+            gap: 12px;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 14px 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 15px;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            font-family: inherit;
+        }
+
+        input[type="text"]:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .send-btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 0 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .send-btn:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .send-btn:disabled {
+            background-color: #94a3b8;
+            cursor: not-allowed;
+        }
+
+        /* Loading Spinner */
+        .spinner-container {
+            display: none;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 18px;
+            align-self: flex-start;
+            background: var(--bot-msg);
+            border-radius: 12px;
+            border-bottom-left-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+
+        .spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid var(--border-color);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        .spinner-text {
+            font-size: 14px;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- Header area -->
+        <header>
+            <h1>Equity Document Q&A</h1>
+            <p class="subtitle">Powered by RAG + Gemini</p>
+        </header>
+
+        <!-- Upload section -->
+        <div class="upload-section">
+            <input type="file" id="fileInput" accept=".pdf">
+            <button class="upload-btn" onclick="document.getElementById('fileInput').click()">Upload ESOP/Equity PDF</button>
+            <div id="uploadStatus">Document ready. Start asking questions.</div>
+        </div>
+
+        <!-- Chat history window -->
+        <div class="chat-window" id="chatWindow">
+            <div class="message-wrapper bot-message">
+                <div class="bubble">Hello! I am ready to assist you. Please upload your ESOP or Equity PDF document to begin.</div>
+            </div>
+            <!-- Dynamic items append here -->
+        </div>
+
+        <!-- Text input area -->
+        <div class="input-section">
+            <input type="text" id="questionInput" placeholder="Ask a question about the document..." onkeypress="handleKeyPress(event)">
+            <button class="send-btn" id="sendBtn" onclick="askQuestion()">Send</button>
+        </div>
+    </div>
+
+    <!-- Application Logic -->
+    <script>
+        const chatWindow = document.getElementById('chatWindow');
+        const fileInput = document.getElementById('fileInput');
+        const uploadStatus = document.getElementById('uploadStatus');
+        const questionInput = document.getElementById('questionInput');
+        const sendBtn = document.getElementById('sendBtn');
+        
+        // Define Base URL logic in case user runs this separately from Flask
+        const baseURL = window.location.protocol === 'file:' ? 'http://127.0.0.1:5000' : '';
+        
+        let isUploading = false;
+        let isAsking = false;
+
+        function scrollToBottom() {
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+        }
+
+        fileInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            // Update UI for loading state
+            uploadStatus.style.display = 'block';
+            uploadStatus.style.opacity = '1';
+            uploadStatus.style.color = '#1e293b';
+            uploadStatus.textContent = 'Uploading and processing document...';
+            
+            const formData = new FormData();
+            formData.append('file', file);
+
+            isUploading = true;
+            try {
+                const response = await fetch(baseURL + '/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    uploadStatus.style.color = '#10b981'; // Green confirmation
+                    uploadStatus.textContent = 'Document ready. Start asking questions.';
+                } else {
+                    uploadStatus.style.color = '#ef4444'; // Red failure
+                    uploadStatus.textContent = result.error || 'Upload failed.';
+                }
+            } catch (err) {
+                uploadStatus.style.color = '#ef4444';
+                uploadStatus.textContent = 'Network error communicating with the server.';
+            } finally {
+                isUploading = false;
+                fileInput.value = ''; // Reset input to allow re-upload
+            }
+        });
+
+        function handleKeyPress(e) {
+            if (e.key === 'Enter') {
+                askQuestion();
+            }
+        }
+
+        function createMessageElement(text, isUser, sources = []) {
+            const wrapper = document.createElement('div');
+            wrapper.className = `message-wrapper ${isUser ? 'user-message' : 'bot-message'}`;
+            
+            const bubble = document.createElement('div');
+            bubble.className = 'bubble';
+            bubble.textContent = text;
+            wrapper.appendChild(bubble);
+
+            // Create citation box beneath bot messages if applicable
+            if (!isUser && sources && sources.length > 0) {
+                const sourceDiv = document.createElement('div');
+                sourceDiv.className = 'source-text';
+                sourceDiv.textContent = 'Source: ' + sources.join(', ');
+                wrapper.appendChild(sourceDiv);
+            }
+
+            return wrapper;
+        }
+
+        function showSpinner() {
+            const spinnerWrapper = document.createElement('div');
+            spinnerWrapper.className = 'spinner-container';
+            spinnerWrapper.id = 'activeSpinner';
+            
+            const spinner = document.createElement('div');
+            spinner.className = 'spinner';
+            
+            const text = document.createElement('span');
+            text.className = 'spinner-text';
+            text.textContent = 'Thinking...';
+            
+            spinnerWrapper.appendChild(spinner);
+            spinnerWrapper.appendChild(text);
+            
+            spinnerWrapper.style.display = 'flex';
+            chatWindow.appendChild(spinnerWrapper);
+            scrollToBottom();
+        }
+
+        function removeSpinner() {
+            const spinner = document.getElementById('activeSpinner');
+            if (spinner) {
+                spinner.remove();
+            }
+        }
+
+        async function askQuestion() {
+            const text = questionInput.value.trim();
+            if (!text || isAsking) return;
+
+            // 1. Generate local UI bubble
+            questionInput.value = '';
+            chatWindow.appendChild(createMessageElement(text, true));
+            scrollToBottom();
+
+            // 2. Lock UI and show spinner
+            isAsking = true;
+            sendBtn.disabled = true;
+            showSpinner();
+
+            // 3. Contact FLASK API Endpoint
+            try {
+                const response = await fetch(baseURL + '/ask', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ question: text })
+                });
+
+                const result = await response.json();
+                removeSpinner();
+
+                if (response.ok) {
+                    chatWindow.appendChild(createMessageElement(result.answer, false, result.sources));
+                } else {
+                    chatWindow.appendChild(createMessageElement(result.error || "An error occurred handling your request.", false));
+                }
+            } catch (err) {
+                removeSpinner();
+                chatWindow.appendChild(createMessageElement("Network error updating response from server.", false));
+            } finally {
+                isAsking = false;
+                sendBtn.disabled = false;
+                scrollToBottom();
+                questionInput.focus();
+            }
+        }
+    </script>
+</body>
+</html>
